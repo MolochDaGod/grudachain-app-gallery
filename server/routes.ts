@@ -27,9 +27,9 @@ export async function registerRoutes(
     }
 
     try {
-      const thumbUrl = `https://image.thum.io/get/width/640/crop/360/${app.url}`;
+      const thumbUrl = `https://image.thum.io/get/width/640/crop/360/wait/5/noscrollbar/${app.url}`;
       const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 15000);
+      const timeout = setTimeout(() => controller.abort(), 30000);
       const response = await fetch(thumbUrl, {
         signal: controller.signal,
         headers: { "User-Agent": "GRUDACHAIN-Gallery/1.0" },
