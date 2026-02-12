@@ -3,9 +3,10 @@ import { AppCard } from "@/components/AppCard";
 import { Footer } from "@/components/Footer";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, Loader2, Filter } from "lucide-react";
+import { Search, Loader2, Terminal } from "lucide-react";
 import { useState, useMemo } from "react";
 import { motion } from "framer-motion";
+import { Link } from "wouter";
 import emblemMain from "@assets/image_1767134942654_1770888806502.png";
 
 export default function Home() {
@@ -77,6 +78,18 @@ export default function Home() {
           >
             App Gallery
           </motion.p>
+
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.18 }}
+          >
+            <Link href="/workspace">
+              <Button variant="outline" size="sm" className="rounded-full border-white/20 mt-2" data-testid="button-open-workspace">
+                <Terminal className="w-4 h-4 mr-1" /> Open Workspace
+              </Button>
+            </Link>
+          </motion.div>
           
           <motion.p 
             initial={{ opacity: 0, y: 20 }}
