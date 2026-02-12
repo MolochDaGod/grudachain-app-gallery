@@ -58,7 +58,7 @@ export function AppCard({ app, index, health }: AppCardProps) {
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4, delay: index * 0.05 }}
+      transition={{ duration: 0.4, delay: Math.min(index * 0.05, 0.6) }}
       className="group block h-full"
     >
       <div className={`h-full flex flex-col bg-card rounded-md border overflow-hidden card-hover-effect relative ${broken ? "border-red-500/30 opacity-70" : "border-border/50"}`}>

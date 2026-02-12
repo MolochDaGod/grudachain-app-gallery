@@ -17,10 +17,19 @@ export default function Home() {
   const [search, setSearch] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
+  const [forceRefresh, setForceRefresh] = useState(false);
+  const healthQueryKey = forceRefresh ? ["/api/apps/health", "refresh=true"] : ["/api/apps/health"];
   const { data: healthData, isLoading: healthLoading, refetch: refetchHealth } = useQuery<Record<string, { status: number; ok: boolean }>>({
-    queryKey: ["/api/apps/health"],
+    queryKey: healthQueryKey,
+    queryFn: async () => {
+      const url = forceRefresh ? "/api/apps/health?refresh=true" : "/api/apps/health";
+      const res = await fetch(url);
+      if (!res.ok) throw new Error("Health check failed");
+      setForceRefresh(false);
+      return res.json();
+    },
     enabled: !!apps && apps.length > 0,
-    staleTime: 5 * 60 * 1000,
+    staleTime: 3 * 60 * 1000,
     refetchOnWindowFocus: false,
   });
 
@@ -122,7 +131,7 @@ export default function Home() {
               variant="outline"
               size="sm"
               className="rounded-full border-white/20 mt-2"
-              onClick={() => refetchHealth()}
+              onClick={() => { setForceRefresh(true); setTimeout(() => refetchHealth(), 50); }}
               disabled={healthLoading}
               data-testid="button-recheck-health"
             >
@@ -210,7 +219,7 @@ export default function Home() {
               <div className="col-span-full text-center py-20 text-muted-foreground">
                 <p className="text-lg">No apps found matching your search.</p>
                 <Button 
-                  variant="link" 
+                  variant="ghost" 
                   onClick={() => { setSearch(""); setSelectedCategory(null); }}
                   className="text-primary mt-2"
                   data-testid="button-clear-filters"

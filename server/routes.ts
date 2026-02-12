@@ -5,11 +5,17 @@ import { api } from "@shared/routes";
 import fs from "fs";
 import path from "path";
 
+let healthCache: { data: Record<number, { status: number; ok: boolean }>; timestamp: number } | null = null;
+const HEALTH_CACHE_TTL = 3 * 60 * 1000;
+
+const screenshotCache = new Map<number, { buffer: Buffer; contentType: string; timestamp: number }>();
+const SCREENSHOT_CACHE_TTL = 60 * 60 * 1000;
+const MAX_SCREENSHOT_CACHE = 60;
+
 export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
-  // Seed database
   await seedDatabase();
 
   app.get(api.apps.list.path, async (req, res) => {
@@ -19,15 +25,29 @@ export async function registerRoutes(
 
   app.get("/api/apps/:id/screenshot", async (req, res) => {
     const appId = parseInt(req.params.id);
+    if (isNaN(appId)) {
+      res.status(400).json({ error: "Invalid app ID" });
+      return;
+    }
+
+    const cached = screenshotCache.get(appId);
+    if (cached && Date.now() - cached.timestamp < SCREENSHOT_CACHE_TTL) {
+      res.setHeader("Content-Type", cached.contentType);
+      res.setHeader("Cache-Control", "public, max-age=3600");
+      res.setHeader("X-Cache", "HIT");
+      res.send(cached.buffer);
+      return;
+    }
+
     const allApps = await storage.getApps();
-    const app = allApps.find(a => a.id === appId);
-    if (!app) {
+    const targetApp = allApps.find(a => a.id === appId);
+    if (!targetApp) {
       res.status(404).json({ error: "App not found" });
       return;
     }
 
     try {
-      const thumbUrl = `https://image.thum.io/get/width/640/crop/360/wait/5/noscrollbar/${app.url}`;
+      const thumbUrl = `https://image.thum.io/get/width/640/crop/360/wait/5/noscrollbar/${targetApp.url}`;
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), 30000);
       const response = await fetch(thumbUrl, {
@@ -42,10 +62,18 @@ export async function registerRoutes(
       }
 
       const contentType = response.headers.get("content-type") || "image/png";
+      const buffer = Buffer.from(await response.arrayBuffer());
+
+      if (screenshotCache.size >= MAX_SCREENSHOT_CACHE) {
+        const entries = Array.from(screenshotCache.entries());
+        const oldest = entries.sort((a, b) => a[1].timestamp - b[1].timestamp)[0];
+        if (oldest) screenshotCache.delete(oldest[0]);
+      }
+      screenshotCache.set(appId, { buffer, contentType, timestamp: Date.now() });
+
       res.setHeader("Content-Type", contentType);
       res.setHeader("Cache-Control", "public, max-age=3600");
-
-      const buffer = Buffer.from(await response.arrayBuffer());
+      res.setHeader("X-Cache", "MISS");
       res.send(buffer);
     } catch {
       res.status(502).json({ error: "Failed to fetch screenshot" });
@@ -53,27 +81,37 @@ export async function registerRoutes(
   });
 
   app.get("/api/apps/health", async (req, res) => {
+    const forceRefresh = req.query.refresh === "true";
+
+    if (!forceRefresh && healthCache && Date.now() - healthCache.timestamp < HEALTH_CACHE_TTL) {
+      res.setHeader("X-Cache", "HIT");
+      res.json(healthCache.data);
+      return;
+    }
+
     const allApps = await storage.getApps();
     const results: Record<number, { status: number; ok: boolean }> = {};
 
-    const checks = allApps.map(async (app) => {
+    const checks = allApps.map(async (a) => {
       try {
         const controller = new AbortController();
         const timeout = setTimeout(() => controller.abort(), 8000);
-        const resp = await fetch(app.url, {
-          method: "GET",
+        const resp = await fetch(a.url, {
+          method: "HEAD",
           signal: controller.signal,
           redirect: "follow",
           headers: { "User-Agent": "GRUDACHAIN-HealthCheck/1.0" },
         });
         clearTimeout(timeout);
-        results[app.id] = { status: resp.status, ok: resp.ok };
+        results[a.id] = { status: resp.status, ok: resp.ok };
       } catch {
-        results[app.id] = { status: 0, ok: false };
+        results[a.id] = { status: 0, ok: false };
       }
     });
 
     await Promise.allSettled(checks);
+    healthCache = { data: results, timestamp: Date.now() };
+    res.setHeader("X-Cache", "MISS");
     res.json(results);
   });
 
@@ -94,19 +132,11 @@ async function seedDatabase() {
   const content = fs.readFileSync(filePath, "utf-8");
   const lines = content.split('\n').map(l => l.trim()).filter(l => l.length > 0);
 
-  // Skip the first line if it's the prompt text
   let startIndex = 0;
   if (lines[0].startsWith("make me an html")) {
     startIndex = 1;
   }
 
-  // Group lines into blocks
-  // Blocks seem to be separated by multiple newlines in original file, but here we just have a list of non-empty lines.
-  // The structure is Name -> (Category?) -> URL -> Stats.
-  // URL always starts with https://puter.com
-  // Stats line starts with a number usually.
-  
-  // Let's iterate and consume lines.
   let i = startIndex;
   while (i < lines.length) {
     const name = lines[i];
@@ -117,12 +147,10 @@ async function seedDatabase() {
     let url: string = "";
     let stats: string = "";
 
-    // Check if next line is URL
     if (lines[i].startsWith("https://")) {
       url = lines[i];
       i++;
     } else {
-      // Must be category
       category = lines[i];
       i++;
       if (i < lines.length && lines[i].startsWith("https://")) {
@@ -132,11 +160,6 @@ async function seedDatabase() {
     }
 
     if (i < lines.length) {
-      // The next line is likely stats
-      // "4 59 Sep 7th, 2025"
-      // or "1 36 Jan 7th, 2026"
-      // It might be missing if file ends abruptly, but let's assume it exists or check format.
-      // Stats line usually starts with a digit.
       if (/^\d/.test(lines[i])) {
          stats = lines[i];
          i++;

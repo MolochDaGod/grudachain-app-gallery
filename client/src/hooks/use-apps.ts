@@ -18,23 +18,24 @@ export function useApps() {
 // Example: "4 59 Sep 7th, 2025"
 export function parseStats(statsStr: string | null) {
   if (!statsStr) return null;
-  
+
+  const tabParts = statsStr.split('\t');
+  if (tabParts.length >= 3) {
+    return {
+      version: tabParts[0].trim(),
+      downloads: tabParts[1].trim(),
+      date: tabParts[2].trim(),
+      raw: statsStr
+    };
+  }
+
   const parts = statsStr.trim().split(/\s+/);
   if (parts.length < 3) return { raw: statsStr };
 
-  // Heuristic based on the data: 
-  // 1st number seems to be version or rating? 
-  // 2nd number seems to be visits/downloads?
-  // Rest is date.
-  
-  const metric1 = parts[0];
-  const metric2 = parts[1];
-  const date = parts.slice(2).join(" ");
-
   return {
-    version: metric1,
-    downloads: metric2,
-    date: date,
+    version: parts[0],
+    downloads: parts[1],
+    date: parts.slice(2).join(" "),
     raw: statsStr
   };
 }

@@ -90,12 +90,20 @@ User-pays model: no API keys needed; users authenticate with their own Puter acc
 - **PostgreSQL** — Primary database, connected via `DATABASE_URL` environment variable. Required for the app to start.
 - **Drizzle ORM + Drizzle Kit** — ORM and migration tooling for PostgreSQL
 - **Puter.js SDK** — Client-side cloud SDK loaded via CDN (`https://js.puter.com/v2/`). Provides auth, cloud storage, KV database, AI chat, and app management.
-- **thum.io** — External screenshot thumbnail service. Used in `AppCard` to generate app preview images: `https://image.thum.io/get/width/640/crop/360/{appUrl}`
+- **thum.io** — External screenshot thumbnail service, proxied server-side via `GET /api/apps/:id/screenshot` with `wait/5/noscrollbar` params for guest-mode capture. In-memory cache (1hr TTL, max 60 entries).
 - **Google Fonts** — Inter, Space Grotesk, DM Sans, Fira Code, Geist Mono, Architects Daughter loaded via CDN
 - **Puter Platform** — App URLs point to `puter.com/app/*`; footer links to `developer.puter.com`
 - **Replit plugins** — `@replit/vite-plugin-runtime-error-modal`, `@replit/vite-plugin-cartographer`, `@replit/vite-plugin-dev-banner` (dev only, when `REPL_ID` is set)
 
 ## Recent Changes
+- Server-side screenshot proxy (`GET /api/apps/:id/screenshot`) with thum.io wait/5 for guest-mode rendering, 1hr in-memory cache
+- Server-side health check (`GET /api/apps/health`) with HEAD method, 3min cache, `?refresh=true` bypass
+- N/A display with red styling for broken apps (404, unreachable, 500+)
+- Puter login/logout button on gallery homepage
+- SEO meta tags (title, description, OpenGraph, Twitter)
+- Stats parsing handles tab-separated data format
+- Animation delay capped at 0.6s max
+- usePuter hook stops polling after SDK loads (max 10s)
 - Added Puter.js SDK integration via CDN for client-side cloud operations
 - Added `/workspace` route with Terminal, IDE, AI Chat, and Apps & KV panels
 - Terminal supports: ls, cd, mkdir, touch, cat, rm, cp, mv, pwd, clear, whoami, app:list, app:create, app:delete, app:update, kv.set, kv.get, kv.del, kv.list, ai, ai:model

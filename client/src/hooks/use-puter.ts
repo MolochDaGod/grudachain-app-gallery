@@ -12,6 +12,8 @@ export function usePuter() {
   const [username, setUsername] = useState<string | null>(null);
 
   useEffect(() => {
+    let attempts = 0;
+    const maxAttempts = 20;
     const check = () => {
       if (window.puter) {
         setReady(true);
@@ -26,10 +28,17 @@ export function usePuter() {
         } catch {
           setSignedIn(false);
         }
+        return true;
       }
+      return false;
     };
-    check();
-    const interval = setInterval(check, 500);
+    if (check()) return;
+    const interval = setInterval(() => {
+      attempts++;
+      if (check() || attempts >= maxAttempts) {
+        clearInterval(interval);
+      }
+    }, 500);
     return () => clearInterval(interval);
   }, []);
 
