@@ -1,7 +1,7 @@
 import { App } from "@shared/schema";
 import { parseStats } from "@/hooks/use-apps";
 import { motion } from "framer-motion";
-import { ExternalLink, Calendar, Download, Zap } from "lucide-react";
+import { ExternalLink, Calendar, Download, Zap, AlertTriangle, CheckCircle, Loader2, ImageOff } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useState } from "react";
 import emblemBlueGold from "@assets/image_1767134942654_1770888806502.png";
@@ -20,28 +20,31 @@ const COLOR_DOTS: { name: string; bg: string }[] = [
   { name: "Bronze", bg: "#CD7F32" },
 ];
 
-const gradients = [
-  "from-purple-600 to-blue-600",
-  "from-pink-600 to-rose-600",
-  "from-emerald-600 to-teal-600",
-  "from-orange-600 to-amber-600",
-  "from-indigo-600 to-violet-600",
-  "from-cyan-600 to-blue-600",
-];
+export type HealthStatus = { status: number; ok: boolean } | null;
 
 interface AppCardProps {
   app: App;
   index: number;
+  health?: HealthStatus;
 }
 
-export function AppCard({ app, index }: AppCardProps) {
+export function AppCard({ app, index, health }: AppCardProps) {
   const stats = parseStats(app.stats);
   const [emblemColorIdx, setEmblemColorIdx] = useState(0);
   const [showColorPicker, setShowColorPicker] = useState(false);
+  const [imgLoaded, setImgLoaded] = useState(false);
   const [imgFailed, setImgFailed] = useState(false);
 
-  const gradient = gradients[app.id % gradients.length];
   const screenshotUrl = `https://image.thum.io/get/width/640/crop/360/${encodeURIComponent(app.url)}`;
+
+  const siteStatus: "checking" | "up" | "down" | "error" =
+    health === undefined || health === null
+      ? "checking"
+      : health.ok
+        ? "up"
+        : health.status >= 400
+          ? "error"
+          : "down";
 
   return (
     <motion.div
@@ -59,25 +62,62 @@ export function AppCard({ app, index }: AppCardProps) {
           data-testid={`link-app-${app.id}`}
         >
           <div className="h-44 w-full relative overflow-hidden bg-black">
-            {!imgFailed ? (
+            {!imgFailed && (
               <img
                 src={screenshotUrl}
                 alt={`${app.name} homepage preview`}
-                className="w-full h-full object-cover object-top"
+                className={`w-full h-full object-cover object-top transition-opacity duration-300 ${imgLoaded ? "opacity-100" : "opacity-0"}`}
                 loading="lazy"
+                onLoad={() => setImgLoaded(true)}
                 onError={() => setImgFailed(true)}
+                data-testid={`img-preview-${app.id}`}
               />
-            ) : (
-              <div className={`w-full h-full bg-gradient-to-br ${gradient} flex items-center justify-center`}>
-                <span className="text-4xl font-bold text-white drop-shadow-md">
-                  {app.name.substring(0, 2).toUpperCase()}
-                </span>
+            )}
+
+            {!imgLoaded && !imgFailed && (
+              <div className="absolute inset-0 flex items-center justify-center bg-black/80">
+                <Loader2 className="w-6 h-6 animate-spin text-primary" />
               </div>
             )}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent group-hover:from-black/40 transition-all duration-300" />
-            <div className="absolute bottom-2 left-3 z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center gap-1 text-white text-xs">
+
+            {imgFailed && (
+              <div className="absolute inset-0 flex flex-col items-center justify-center bg-muted/30 gap-2">
+                <ImageOff className="w-8 h-8 text-muted-foreground/60" />
+                <span className="text-xs text-muted-foreground/60">Preview unavailable</span>
+              </div>
+            )}
+
+            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent group-hover:from-black/40 transition-all duration-300 pointer-events-none" />
+            <div className="absolute bottom-2 left-3 z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center gap-1 text-white text-xs pointer-events-none">
               <ExternalLink size={12} />
               <span>Open App</span>
+            </div>
+
+            <div className="absolute top-2 left-2 z-10" data-testid={`status-${app.id}`}>
+              {siteStatus === "checking" && (
+                <div className="flex items-center gap-1 bg-black/60 text-muted-foreground text-[10px] px-1.5 py-0.5 rounded-full backdrop-blur-sm">
+                  <Loader2 className="w-3 h-3 animate-spin" />
+                  <span>Checking</span>
+                </div>
+              )}
+              {siteStatus === "up" && (
+                <div className="flex items-center gap-1 bg-green-900/70 text-green-300 text-[10px] px-1.5 py-0.5 rounded-full backdrop-blur-sm">
+                  <CheckCircle className="w-3 h-3" />
+                  <span>Live</span>
+                </div>
+              )}
+              {siteStatus === "error" && (
+                <div className="flex items-center gap-1 bg-yellow-900/70 text-yellow-300 text-[10px] px-1.5 py-0.5 rounded-full backdrop-blur-sm">
+                  <AlertTriangle className="w-3 h-3" />
+                  <span>{health?.status || "Err"}</span>
+                </div>
+              )}
+              {siteStatus === "down" && (
+                <div className="flex items-center gap-1 bg-red-900/70 text-red-300 text-[10px] px-1.5 py-0.5 rounded-full backdrop-blur-sm">
+                  <AlertTriangle className="w-3 h-3" />
+                  <span>Down</span>
+                </div>
+              )}
             </div>
           </div>
         </a>

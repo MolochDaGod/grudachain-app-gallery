@@ -17,6 +17,31 @@ export async function registerRoutes(
     res.json(apps);
   });
 
+  app.get("/api/apps/health", async (req, res) => {
+    const allApps = await storage.getApps();
+    const results: Record<number, { status: number; ok: boolean }> = {};
+
+    const checks = allApps.map(async (app) => {
+      try {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 8000);
+        const resp = await fetch(app.url, {
+          method: "GET",
+          signal: controller.signal,
+          redirect: "follow",
+          headers: { "User-Agent": "GRUDACHAIN-HealthCheck/1.0" },
+        });
+        clearTimeout(timeout);
+        results[app.id] = { status: resp.status, ok: resp.ok };
+      } catch {
+        results[app.id] = { status: 0, ok: false };
+      }
+    });
+
+    await Promise.allSettled(checks);
+    res.json(results);
+  });
+
   return httpServer;
 }
 

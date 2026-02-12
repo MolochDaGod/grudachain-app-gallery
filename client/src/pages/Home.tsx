@@ -1,18 +1,28 @@
 import { useApps } from "@/hooks/use-apps";
-import { AppCard } from "@/components/AppCard";
+import { AppCard, type HealthStatus } from "@/components/AppCard";
 import { Footer } from "@/components/Footer";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, Loader2, Terminal } from "lucide-react";
+import { Search, Loader2, Terminal, LogIn, LogOut, User, RefreshCw } from "lucide-react";
 import { useState, useMemo } from "react";
 import { motion } from "framer-motion";
 import { Link } from "wouter";
+import { usePuter } from "@/hooks/use-puter";
+import { useQuery } from "@tanstack/react-query";
 import emblemMain from "@assets/image_1767134942654_1770888806502.png";
 
 export default function Home() {
   const { data: apps, isLoading, error } = useApps();
+  const { signedIn, username, signIn, signOut } = usePuter();
   const [search, setSearch] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+
+  const { data: healthData, isLoading: healthLoading, refetch: refetchHealth } = useQuery<Record<string, { status: number; ok: boolean }>>({
+    queryKey: ["/api/apps/health"],
+    enabled: !!apps && apps.length > 0,
+    staleTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: false,
+  });
 
   const categories = useMemo(() => {
     if (!apps) return [];
@@ -42,6 +52,24 @@ export default function Home() {
       <div className="fixed inset-0 pointer-events-none z-0">
         <div className="absolute top-[-10%] right-[-5%] w-[500px] h-[500px] bg-primary/20 rounded-full blur-[120px] opacity-40" />
         <div className="absolute bottom-[-10%] left-[-5%] w-[500px] h-[500px] bg-accent/10 rounded-full blur-[120px] opacity-40" />
+      </div>
+
+      <div className="fixed top-4 right-4 z-50">
+        {signedIn ? (
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-muted-foreground flex items-center gap-1.5">
+              <User className="w-3.5 h-3.5" />
+              {username}
+            </span>
+            <Button variant="outline" size="sm" onClick={signOut} className="rounded-full border-white/20" data-testid="button-sign-out-home">
+              <LogOut className="w-4 h-4 mr-1" /> Sign Out
+            </Button>
+          </div>
+        ) : (
+          <Button variant="outline" size="sm" onClick={signIn} className="rounded-full border-white/20" data-testid="button-sign-in-home">
+            <LogIn className="w-4 h-4 mr-1" /> Puter Login
+          </Button>
+        )}
       </div>
 
       <div className="container mx-auto px-4 py-12 md:py-20 relative z-10 flex-grow">
@@ -83,12 +111,24 @@ export default function Home() {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.18 }}
+            className="flex items-center justify-center gap-2 flex-wrap"
           >
             <Link href="/workspace">
               <Button variant="outline" size="sm" className="rounded-full border-white/20 mt-2" data-testid="button-open-workspace">
                 <Terminal className="w-4 h-4 mr-1" /> Open Workspace
               </Button>
             </Link>
+            <Button
+              variant="outline"
+              size="sm"
+              className="rounded-full border-white/20 mt-2"
+              onClick={() => refetchHealth()}
+              disabled={healthLoading}
+              data-testid="button-recheck-health"
+            >
+              <RefreshCw className={`w-4 h-4 mr-1 ${healthLoading ? "animate-spin" : ""}`} />
+              {healthLoading ? "Checking..." : "Re-check Status"}
+            </Button>
           </motion.div>
           
           <motion.p 
@@ -159,7 +199,12 @@ export default function Home() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 md:gap-8">
             {filteredApps.length > 0 ? (
               filteredApps.map((app, index) => (
-                <AppCard key={app.id} app={app} index={index} />
+                <AppCard
+                  key={app.id}
+                  app={app}
+                  index={index}
+                  health={healthData ? (healthData[app.id] || null) : undefined}
+                />
               ))
             ) : (
               <div className="col-span-full text-center py-20 text-muted-foreground">
