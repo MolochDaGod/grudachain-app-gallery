@@ -3,23 +3,22 @@ import { AppCard } from "@/components/AppCard";
 import { Footer } from "@/components/Footer";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, Loader2, Sparkles, Filter } from "lucide-react";
+import { Search, Loader2, Filter } from "lucide-react";
 import { useState, useMemo } from "react";
 import { motion } from "framer-motion";
+import emblemMain from "@assets/image_1767134942654_1770888806502.png";
 
 export default function Home() {
   const { data: apps, isLoading, error } = useApps();
   const [search, setSearch] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
-  // Extract unique categories
   const categories = useMemo(() => {
     if (!apps) return [];
     const cats = new Set(apps.map(app => app.category).filter(Boolean));
     return Array.from(cats) as string[];
   }, [apps]);
 
-  // Filter apps
   const filteredApps = useMemo(() => {
     if (!apps) return [];
     return apps.filter(app => {
@@ -39,44 +38,55 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-background flex flex-col font-sans selection:bg-primary/30">
-      {/* Decorative background gradients */}
       <div className="fixed inset-0 pointer-events-none z-0">
         <div className="absolute top-[-10%] right-[-5%] w-[500px] h-[500px] bg-primary/20 rounded-full blur-[120px] opacity-40" />
         <div className="absolute bottom-[-10%] left-[-5%] w-[500px] h-[500px] bg-accent/10 rounded-full blur-[120px] opacity-40" />
       </div>
 
       <div className="container mx-auto px-4 py-12 md:py-20 relative z-10 flex-grow">
-        {/* Header Section */}
         <div className="text-center max-w-3xl mx-auto mb-16 space-y-6">
           <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
+            initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.5 }}
-            className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-sm font-medium border border-primary/20 mb-4"
+            className="flex justify-center mb-6"
           >
-            <Sparkles size={14} />
-            <span>Discover Apps</span>
+            <img
+              src={emblemMain}
+              alt="GRUDACHAIN Emblem"
+              className="w-24 h-24 md:w-32 md:h-32 drop-shadow-2xl"
+              data-testid="img-main-emblem"
+            />
           </motion.div>
           
           <motion.h1 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.1 }}
-            className="text-5xl md:text-7xl font-display font-bold tracking-tight text-white mb-6 text-glow"
+            className="text-5xl md:text-7xl font-bold tracking-tight text-white mb-2 text-glow"
+            data-testid="text-title"
           >
-            Puter <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-accent">App Gallery</span>
+            GRUDACHAIN
           </motion.h1>
+
+          <motion.p
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.15 }}
+            className="text-lg text-transparent bg-clip-text bg-gradient-to-r from-primary to-accent font-semibold"
+          >
+            App Gallery
+          </motion.p>
           
           <motion.p 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.2 }}
-            className="text-xl text-muted-foreground leading-relaxed"
+            className="text-lg text-muted-foreground leading-relaxed"
           >
-            Explore a curated collection of games, tools, and utilities built for the Puter cloud platform.
+            Explore the full collection of GRUDACHAIN apps, games, tools, and utilities on the Puter cloud platform. Hover over the emblem on each card to change its color.
           </motion.p>
 
-          {/* Search Bar */}
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -92,11 +102,11 @@ export default function Home() {
               className="pl-10 h-12 rounded-full bg-secondary/50 border-white/10 focus:border-primary/50 focus:ring-primary/20 transition-all backdrop-blur-sm"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
+              data-testid="input-search"
             />
           </motion.div>
         </div>
 
-        {/* Categories Filter */}
         {categories.length > 0 && (
           <motion.div 
             initial={{ opacity: 0, y: 10 }}
@@ -109,6 +119,7 @@ export default function Home() {
               size="sm"
               onClick={() => setSelectedCategory(null)}
               className="rounded-full"
+              data-testid="button-filter-all"
             >
               All
             </Button>
@@ -119,6 +130,7 @@ export default function Home() {
                 size="sm"
                 onClick={() => setSelectedCategory(cat === selectedCategory ? null : cat)}
                 className="rounded-full border-white/10"
+                data-testid={`button-filter-${cat.toLowerCase().replace(/\s+/g, '-')}`}
               >
                 {cat}
               </Button>
@@ -126,7 +138,6 @@ export default function Home() {
           </motion.div>
         )}
 
-        {/* Content Grid */}
         {isLoading ? (
           <div className="flex justify-center items-center py-20">
             <Loader2 className="w-10 h-10 animate-spin text-primary" />
@@ -144,6 +155,7 @@ export default function Home() {
                   variant="link" 
                   onClick={() => { setSearch(""); setSelectedCategory(null); }}
                   className="text-primary mt-2"
+                  data-testid="button-clear-filters"
                 >
                   Clear filters
                 </Button>
