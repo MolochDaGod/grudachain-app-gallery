@@ -17,6 +17,41 @@ export async function registerRoutes(
     res.json(apps);
   });
 
+  app.get("/api/apps/:id/screenshot", async (req, res) => {
+    const appId = parseInt(req.params.id);
+    const allApps = await storage.getApps();
+    const app = allApps.find(a => a.id === appId);
+    if (!app) {
+      res.status(404).json({ error: "App not found" });
+      return;
+    }
+
+    try {
+      const thumbUrl = `https://image.thum.io/get/width/640/crop/360/${app.url}`;
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 15000);
+      const response = await fetch(thumbUrl, {
+        signal: controller.signal,
+        headers: { "User-Agent": "GRUDACHAIN-Gallery/1.0" },
+      });
+      clearTimeout(timeout);
+
+      if (!response.ok) {
+        res.status(502).json({ error: "Screenshot service unavailable" });
+        return;
+      }
+
+      const contentType = response.headers.get("content-type") || "image/png";
+      res.setHeader("Content-Type", contentType);
+      res.setHeader("Cache-Control", "public, max-age=3600");
+
+      const buffer = Buffer.from(await response.arrayBuffer());
+      res.send(buffer);
+    } catch {
+      res.status(502).json({ error: "Failed to fetch screenshot" });
+    }
+  });
+
   app.get("/api/apps/health", async (req, res) => {
     const allApps = await storage.getApps();
     const results: Record<number, { status: number; ok: boolean }> = {};

@@ -1,7 +1,7 @@
 import { App } from "@shared/schema";
 import { parseStats } from "@/hooks/use-apps";
 import { motion } from "framer-motion";
-import { ExternalLink, Calendar, Download, Zap, AlertTriangle, CheckCircle, Loader2, ImageOff } from "lucide-react";
+import { ExternalLink, Calendar, Download, Zap, AlertTriangle, CheckCircle, Loader2, ImageOff, Ban } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useState } from "react";
 import emblemBlueGold from "@assets/image_1767134942654_1770888806502.png";
@@ -28,6 +28,11 @@ interface AppCardProps {
   health?: HealthStatus;
 }
 
+function isAppBroken(health?: HealthStatus): boolean {
+  if (!health) return false;
+  return health.status === 404 || health.status === 0 || health.status >= 500;
+}
+
 export function AppCard({ app, index, health }: AppCardProps) {
   const stats = parseStats(app.stats);
   const [emblemColorIdx, setEmblemColorIdx] = useState(0);
@@ -35,16 +40,19 @@ export function AppCard({ app, index, health }: AppCardProps) {
   const [imgLoaded, setImgLoaded] = useState(false);
   const [imgFailed, setImgFailed] = useState(false);
 
-  const screenshotUrl = `https://image.thum.io/get/width/640/crop/360/${encodeURIComponent(app.url)}`;
+  const broken = isAppBroken(health);
+  const screenshotUrl = `/api/apps/${app.id}/screenshot`;
 
   const siteStatus: "checking" | "up" | "down" | "error" =
-    health === undefined || health === null
+    health === undefined
       ? "checking"
-      : health.ok
-        ? "up"
-        : health.status >= 400
-          ? "error"
-          : "down";
+      : health === null
+        ? "checking"
+        : health.ok
+          ? "up"
+          : health.status === 404 || health.status === 0
+            ? "down"
+            : "error";
 
   return (
     <motion.div
@@ -53,7 +61,7 @@ export function AppCard({ app, index, health }: AppCardProps) {
       transition={{ duration: 0.4, delay: index * 0.05 }}
       className="group block h-full"
     >
-      <div className="h-full flex flex-col bg-card rounded-md border border-border/50 overflow-hidden card-hover-effect relative">
+      <div className={`h-full flex flex-col bg-card rounded-md border overflow-hidden card-hover-effect relative ${broken ? "border-red-500/30 opacity-70" : "border-border/50"}`}>
         <a
           href={app.url}
           target="_blank"
@@ -62,29 +70,41 @@ export function AppCard({ app, index, health }: AppCardProps) {
           data-testid={`link-app-${app.id}`}
         >
           <div className="h-44 w-full relative overflow-hidden bg-black">
-            {!imgFailed && (
-              <img
-                src={screenshotUrl}
-                alt={`${app.name} homepage preview`}
-                className={`w-full h-full object-cover object-top transition-opacity duration-300 ${imgLoaded ? "opacity-100" : "opacity-0"}`}
-                loading="lazy"
-                onLoad={() => setImgLoaded(true)}
-                onError={() => setImgFailed(true)}
-                data-testid={`img-preview-${app.id}`}
-              />
-            )}
-
-            {!imgLoaded && !imgFailed && (
-              <div className="absolute inset-0 flex items-center justify-center bg-black/80">
-                <Loader2 className="w-6 h-6 animate-spin text-primary" />
+            {broken ? (
+              <div className="absolute inset-0 flex flex-col items-center justify-center bg-muted/20 gap-2">
+                <Ban className="w-10 h-10 text-red-400/60" />
+                <span className="text-sm font-semibold text-red-400/80">N/A</span>
+                <span className="text-[10px] text-muted-foreground">
+                  {health?.status === 404 ? "Page Not Found (404)" : health?.status === 0 ? "Missing / Unreachable" : `Error ${health?.status}`}
+                </span>
               </div>
-            )}
+            ) : (
+              <>
+                {!imgFailed && (
+                  <img
+                    src={screenshotUrl}
+                    alt={`${app.name} homepage preview`}
+                    className={`w-full h-full object-cover object-top transition-opacity duration-300 ${imgLoaded ? "opacity-100" : "opacity-0"}`}
+                    loading="lazy"
+                    onLoad={() => setImgLoaded(true)}
+                    onError={() => setImgFailed(true)}
+                    data-testid={`img-preview-${app.id}`}
+                  />
+                )}
 
-            {imgFailed && (
-              <div className="absolute inset-0 flex flex-col items-center justify-center bg-muted/30 gap-2">
-                <ImageOff className="w-8 h-8 text-muted-foreground/60" />
-                <span className="text-xs text-muted-foreground/60">Preview unavailable</span>
-              </div>
+                {!imgLoaded && !imgFailed && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/80">
+                    <Loader2 className="w-6 h-6 animate-spin text-primary" />
+                  </div>
+                )}
+
+                {imgFailed && (
+                  <div className="absolute inset-0 flex flex-col items-center justify-center bg-muted/30 gap-2">
+                    <ImageOff className="w-8 h-8 text-muted-foreground/60" />
+                    <span className="text-xs text-muted-foreground/60">Preview unavailable</span>
+                  </div>
+                )}
+              </>
             )}
 
             <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent group-hover:from-black/40 transition-all duration-300 pointer-events-none" />
@@ -115,7 +135,7 @@ export function AppCard({ app, index, health }: AppCardProps) {
               {siteStatus === "down" && (
                 <div className="flex items-center gap-1 bg-red-900/70 text-red-300 text-[10px] px-1.5 py-0.5 rounded-full backdrop-blur-sm">
                   <AlertTriangle className="w-3 h-3" />
-                  <span>Down</span>
+                  <span>N/A</span>
                 </div>
               )}
             </div>
@@ -165,7 +185,7 @@ export function AppCard({ app, index, health }: AppCardProps) {
               href={app.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="font-bold text-lg text-foreground line-clamp-1 group-hover:text-primary transition-colors"
+              className={`font-bold text-lg line-clamp-1 transition-colors ${broken ? "text-muted-foreground line-through" : "text-foreground group-hover:text-primary"}`}
               data-testid={`text-app-name-${app.id}`}
             >
               {app.name}
@@ -173,7 +193,11 @@ export function AppCard({ app, index, health }: AppCardProps) {
           </div>
 
           <div className="mb-3">
-            {app.category ? (
+            {broken ? (
+              <Badge variant="destructive" className="text-xs font-medium border-0">
+                N/A
+              </Badge>
+            ) : app.category ? (
               <Badge variant="secondary" className="bg-secondary/50 text-xs font-medium border-0">
                 {app.category}
               </Badge>
