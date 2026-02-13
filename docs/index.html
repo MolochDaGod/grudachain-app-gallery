@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GRUDACHAIN App Gallery</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://js.puter.com/v2/"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+    body { font-family: 'Inter', sans-serif; }
+    .text-glow { text-shadow: 0 0 30px rgba(139, 92, 246, 0.5); }
+    .card-hover:hover { transform: translateY(-4px); box-shadow: 0 20px 40px rgba(0,0,0,0.3); }
+    .gradient-border { background: linear-gradient(135deg, #8b5cf6, #06b6d4); padding: 1px; }
+  </style>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: '#8b5cf6',
+            accent: '#06b6d4',
+          }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="min-h-screen bg-gray-950 text-white">
+  <!-- Background effects -->
+  <div class="fixed inset-0 pointer-events-none z-0">
+    <div class="absolute top-[-10%] right-[-5%] w-[500px] h-[500px] bg-primary/20 rounded-full blur-[120px] opacity-40"></div>
+    <div class="absolute bottom-[-10%] left-[-5%] w-[500px] h-[500px] bg-accent/10 rounded-full blur-[120px] opacity-40"></div>
+  </div>
+
+  <!-- Auth Button -->
+  <div class="fixed top-4 right-4 z-50">
+    <button id="authBtn" onclick="handleAuth()" class="px-4 py-2 rounded-full border border-white/20 bg-gray-900/50 backdrop-blur-sm hover:bg-gray-800 transition flex items-center gap-2">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"></path></svg>
+      <span id="authText">Puter Login</span>
+    </button>
+  </div>
+
+  <div class="container mx-auto px-4 py-12 md:py-20 relative z-10">
+    <!-- Header -->
+    <div class="text-center max-w-3xl mx-auto mb-16 space-y-6">
+      <div class="flex justify-center mb-6">
+        <div class="w-24 h-24 md:w-32 md:h-32 rounded-full bg-gradient-to-br from-primary to-accent p-1">
+          <div class="w-full h-full rounded-full bg-gray-950 flex items-center justify-center">
+            <span class="text-4xl md:text-5xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">G</span>
+          </div>
+        </div>
+      </div>
+      
+      <h1 class="text-5xl md:text-7xl font-bold tracking-tight text-white mb-2 text-glow">GRUDACHAIN</h1>
+      <p class="text-lg text-transparent bg-clip-text bg-gradient-to-r from-primary to-accent font-semibold">App Gallery</p>
+      <p class="text-lg text-gray-400 leading-relaxed">
+        Explore the full collection of GRUDACHAIN apps, games, tools, and utilities on the Puter cloud platform.
+      </p>
+
+      <!-- Search -->
+      <div class="relative max-w-md mx-auto mt-8">
+        <div class="absolute inset-y-0 left-3 flex items-center pointer-events-none text-gray-500">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+        </div>
+        <input type="text" id="searchInput" placeholder="Search apps..." 
+          class="w-full pl-10 pr-4 h-12 rounded-full bg-gray-900/50 border border-white/10 focus:border-primary/50 focus:ring-2 focus:ring-primary/20 transition-all backdrop-blur-sm outline-none">
+      </div>
+    </div>
+
+    <!-- Category Filter -->
+    <div id="categoryFilter" class="flex flex-wrap justify-center gap-2 mb-12"></div>
+
+    <!-- Apps Grid -->
+    <div id="appsGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 md:gap-8"></div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="border-t border-white/10 py-8 mt-20 relative z-10">
+    <div class="container mx-auto px-4 text-center text-gray-500 text-sm">
+      <p>Built with ❤️ by GRUDACHAIN</p>
+      <p class="mt-2">Powered by <a href="https://puter.com" target="_blank" class="text-primary hover:underline">Puter.com</a></p>
+    </div>
+  </footer>
+
+  <script>
+    const apps = [
+      { id: 1, name: "Warlords", url: "https://puter.com/app/warlords", category: null },
+      { id: 2, name: "THC DOPE BUDZ", url: "https://puter.com/app/thc-dope-budz", category: null },
+      { id: 3, name: "TGE-Billing", url: "https://puter.com/app/tge-billing-w67", category: null },
+      { id: 4, name: "Quick Sprites", url: "https://puter.com/app/sensible-mouse-1616", category: null },
+      { id: 5, name: "RampGrudge", url: "https://puter.com/app/rampgrudge", category: null },
+      { id: 6, name: "Puter Organization Agent", url: "https://puter.com/app/puter-org-agent-fb2", category: null },
+      { id: 7, name: "Platformtest", url: "https://puter.com/app/platformtest", category: null },
+      { id: 8, name: "Nexus", url: "https://puter.com/app/nexus-3", category: null },
+      { id: 9, name: "Grudge Crafting", url: "https://puter.com/app/meta-build", category: null },
+      { id: 10, name: "GrudgeWeb", url: "https://puter.com/app/grudgeweb", category: null },
+      { id: 11, name: "Grudge 2oons", url: "https://puter.com/app/GrudgeToons", category: null },
+      { id: 12, name: "GrudgeStudio", url: "https://puter.com/app/grudgestudio-1", category: null },
+      { id: 13, name: "Nexus Nemesis", url: "https://puter.com/app/GrudgeStudio", category: "Games" },
+      { id: 14, name: "GrudgeSozne", url: "https://puter.com/app/grudgesozne", category: null },
+      { id: 15, name: "Grudge Match 3", url: "https://puter.com/app/GrudgeMatch", category: null },
+      { id: 16, name: "Grudge.Gruda", url: "https://puter.com/app/grudgegruda", category: null },
+      { id: 17, name: "Grudge Editor", url: "https://puter.com/app/GrudgeGames", category: "Developer Tools" },
+      { id: 18, name: "GRUDGEGAMEENGINE", url: "https://puter.com/app/grudgegameengine-1", category: null },
+      { id: 19, name: "Gruda3d", url: "https://puter.com/app/GrudgeGameEngine", category: null },
+      { id: 20, name: "GrudgeDev", url: "https://puter.com/app/grudgedev", category: null },
+      { id: 21, name: "GrudgeCloud", url: "https://puter.com/app/grudgecloud", category: "Developer Tools" },
+      { id: 22, name: "grudgechain-fixed-v2", url: "https://puter.com/app/grudgechain-fixed-v2", category: null },
+      { id: 23, name: "Grudge Apps", url: "https://puter.com/app/grudgechain-ai-system", category: null },
+      { id: 24, name: "grudgechain-ai-email-fixed", url: "https://puter.com/app/grudgechain-ai-email-fixed", category: null },
+      { id: 25, name: "Grudge Warlords", url: "https://puter.com/app/grudge-warlords", category: null },
+      { id: 26, name: "RPG Game-Starter", url: "https://puter.com/app/Grudge-Studio-RPG-Builder", category: null },
+      { id: 27, name: "grudge-server", url: "https://puter.com/app/grudge-server", category: null },
+      { id: 28, name: "Grudge Nexus", url: "https://puter.com/app/grudge-Nexus", category: null },
+      { id: 29, name: "Grudge-Network", url: "https://puter.com/app/grudge-network", category: null },
+      { id: 30, name: "Grudge Launcher", url: "https://puter.com/app/grudge-launcher", category: null },
+      { id: 31, name: "GrudgeGameEngine", url: "https://puter.com/app/Grudge-Game-Editor", category: null },
+      { id: 32, name: "Grudge Client", url: "https://puter.com/app/grudge-client", category: "Utilities" },
+      { id: 33, name: "GrudgeAuth", url: "https://puter.com/app/grudge-auth", category: null },
+      { id: 34, name: "grudge ai cloud", url: "https://puter.com/app/grudge-ai-cloud", category: null },
+      { id: 35, name: "GrudaWay", url: "https://puter.com/app/grudaway", category: null },
+      { id: 36, name: "GrudaPuter", url: "https://puter.com/app/grudaputer", category: null },
+      { id: 37, name: "GRUDACHAIN Memory Worker", url: "https://puter.com/app/grudachain-memory-worker-bw8", category: null },
+      { id: 38, name: "GRUDACHAIN", url: "https://puter.com/app/grudachain", category: "Developer Tools" },
+      { id: 39, name: "GrudaAiLegion", url: "https://puter.com/app/grudaailegion", category: null },
+      { id: 40, name: "GRUDA-SEARCH", url: "https://puter.com/app/gruda-search", category: "Social" },
+      { id: 41, name: "GGE", url: "https://puter.com/app/gge", category: null },
+      { id: 42, name: "generated islands", url: "https://puter.com/app/generated-islands", category: null },
+      { id: 43, name: "Game", url: "https://puter.com/app/game-35", category: null },
+      { id: 44, name: "DiGrudge", url: "https://puter.com/app/DiGrudge", category: null },
+      { id: 45, name: "DappNFT", url: "https://puter.com/app/dapp-NFT-Grudge", category: "Games" },
+      { id: 46, name: "Crafting", url: "https://puter.com/app/crafting", category: null },
+      { id: 47, name: "AKWA Power", url: "https://puter.com/app/AWKA-JZ", category: "Games" },
+      { id: 48, name: "App Connection", url: "https://puter.com/app/app-connection", category: null },
+    ];
+
+    let selectedCategory = null;
+    let searchTerm = '';
+
+    // Get unique categories
+    const categories = [...new Set(apps.map(a => a.category).filter(Boolean))];
+
+    // Render category filters
+    function renderCategories() {
+      const container = document.getElementById('categoryFilter');
+      container.innerHTML = `
+        <button onclick="filterCategory(null)" class="px-4 py-2 rounded-full text-sm font-medium transition ${selectedCategory === null ? 'bg-primary text-white' : 'bg-gray-800 text-gray-300 hover:bg-gray-700'}">All</button>
+        ${categories.map(cat => `
+          <button onclick="filterCategory('${cat}')" class="px-4 py-2 rounded-full text-sm font-medium transition ${selectedCategory === cat ? 'bg-primary text-white' : 'bg-gray-800 text-gray-300 hover:bg-gray-700'}">${cat}</button>
+        `).join('')}
+      `;
+    }
+
+    // Render apps
+    function renderApps() {
+      const container = document.getElementById('appsGrid');
+      const filtered = apps.filter(app => {
+        const matchesSearch = app.name.toLowerCase().includes(searchTerm.toLowerCase());
+        const matchesCategory = selectedCategory ? app.category === selectedCategory : true;
+        return matchesSearch && matchesCategory;
+      });
+
+      if (filtered.length === 0) {
+        container.innerHTML = `
+          <div class="col-span-full text-center py-20 text-gray-500">
+            <p class="text-lg">No apps found matching your search.</p>
+            <button onclick="clearFilters()" class="text-primary mt-2 hover:underline">Clear filters</button>
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = filtered.map((app, i) => `
+        <a href="${app.url}" target="_blank" 
+           class="group block rounded-xl overflow-hidden bg-gray-900/50 border border-white/10 backdrop-blur-sm card-hover transition-all duration-300"
+           style="animation: fadeIn 0.3s ease-out ${i * 0.05}s both">
+          <div class="aspect-video bg-gray-800 relative overflow-hidden">
+            <img src="https://image.thum.io/get/width/640/crop/360/${app.url}" 
+                 alt="${app.name}" 
+                 class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                 loading="lazy"
+                 onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
+            <div class="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-primary/20 to-accent/20" style="display:none">
+              <span class="text-4xl font-bold text-white/30">${app.name.charAt(0)}</span>
+            </div>
+          </div>
+          <div class="p-4">
+            <h3 class="font-semibold text-white group-hover:text-primary transition">${app.name}</h3>
+            ${app.category ? `<span class="inline-block mt-2 text-xs px-2 py-1 rounded-full bg-primary/20 text-primary">${app.category}</span>` : ''}
+          </div>
+        </a>
+      `).join('');
+    }
+
+    function filterCategory(cat) {
+      selectedCategory = cat;
+      renderCategories();
+      renderApps();
+    }
+
+    function clearFilters() {
+      selectedCategory = null;
+      searchTerm = '';
+      document.getElementById('searchInput').value = '';
+      renderCategories();
+      renderApps();
+    }
+
+    // Search
+    document.getElementById('searchInput').addEventListener('input', (e) => {
+      searchTerm = e.target.value;
+      renderApps();
+    });
+
+    // Puter Auth
+    let isSignedIn = false;
+    async function checkAuth() {
+      try {
+        if (window.puter && puter.auth) {
+          isSignedIn = puter.auth.isSignedIn();
+          if (isSignedIn) {
+            const user = await puter.auth.getUser();
+            document.getElementById('authText').textContent = user?.username || 'Signed In';
+          }
+        }
+      } catch(e) {}
+    }
+
+    async function handleAuth() {
+      try {
+        if (isSignedIn) {
+          await puter.auth.signOut();
+          isSignedIn = false;
+          document.getElementById('authText').textContent = 'Puter Login';
+        } else {
+          await puter.auth.signIn();
+          isSignedIn = true;
+          const user = await puter.auth.getUser();
+          document.getElementById('authText').textContent = user?.username || 'Signed In';
+        }
+      } catch(e) {
+        console.error('Auth error:', e);
+      }
+    }
+
+    // Init
+    renderCategories();
+    renderApps();
+    setTimeout(checkAuth, 1000);
+  </script>
+
+  <style>
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</body>
+</html>
